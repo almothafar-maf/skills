@@ -102,7 +102,7 @@ Work through each ticket assigned to the current user in this order, since a QA 
 1. Bring the description up to date, changing only what this step adds ([Editing a ticket](./reference.md#editing-a-ticket)): add each PR or issue missing from its GitHub line, and give a ticket about to reach testing a `How to check`, written to [templates.md](./templates.md).
 2. Add the labels the config says the ticket is missing, sending its current labels with them, since `editJiraIssue` sets the whole list.
 3. Re-read the ticket, then transition it, through the in-progress status when it starts in the To Do stage. A ticket whose description edit failed keeps its status.
-4. Record the release its merges reached, when the config names a release tool ([Releases](./reference.md#releases)).
+4. Record its release once its work is complete, when the config names a release tool ([Releases](./reference.md#releases)).
 
 **Done when** each ticket's changes are applied in that order, or the error is recorded for the report.
 
