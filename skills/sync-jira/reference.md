@@ -57,21 +57,32 @@ https://<site>/issues/?jql=<URL-encoded: key in (<business keys>) AND reporter !
 
 `lookupJiraAccountId` with their name gives the account id.
 
+## Merges into main
+
+[On dev](#on-dev) and [Releases](#releases) both start from the commit that brought a PR's work into `main`. For a PR based on `main`, that is its merge commit. A **stacked PR**, merged into another PR's branch, reaches `main` only inside the carrying PR, whose head branch is the stacked PR's base; with squash or rebase merges, the stacked PR's own merge commit never appears on `main`. Take the carrying PR's merge commit instead, following the chain until a PR's base is `main`. The carrying PR is the one with that head branch that merged after the stacked PR did, or is still open:
+
+```bash
+gh pr list --state all --head <baseRefName> --json number,state,baseRefName,mergedAt,mergeCommit
+```
+
+While the carrying PR is open, the work has not reached `main`. When it closed without merging, or merged before the stacked PR did, the work never reached `main` through it: the ticket stays where it is and the report names the stacked PR.
+
 ## On dev
 
-The config says how a merge reaches dev. The common shapes:
+A merge is on dev once dev runs a build that holds it, healthy. A commit that only names the build dev should run, such as an image tag written into a GitOps values file, is not that evidence: the rollout can still be pending, or fail. The config names the evidence the repository has; the common shapes:
 
-- **A GitOps values file** holding the deployed image tag, such as `tag: main-<app>-<sha>`. A merge is on dev once its merge commit is an ancestor of that sha:
+- **A deploy workflow that waits for the rollout**, with a step that runs `argocd app wait` or `kubectl rollout status` after writing the tag. Take the newest successful run on `main`, check that its waiting step passed, and compare its `headSha`:
 
   ```bash
-  deployed=$(gh api 'repos/{owner}/{repo}/contents/<values file>' --jq .content | base64 --decode | sed -nE "s/^[[:space:]]*tag:[[:space:]]*['\"]?main-<app>-([0-9a-f]+)['\"]?.*/\1/p")
-  gh api "repos/{owner}/{repo}/compare/<merge-commit-sha>...$deployed" --jq .status   # ahead or identical: on dev
+  run=$(gh run list --workflow <file> --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+  gh run view "$run" --json headSha,jobs --jq '{headSha, waited: [.jobs[].steps[] | select(.name == "<waiting step>") | .conclusion]}'   # waited ["success"]
+  gh api "repos/{owner}/{repo}/compare/<merge-into-main-sha>...<headSha>" --jq .status                                                      # ahead or identical: on dev
   ```
 
-- **GitHub deployments**: take the newest successful deployment to the dev environment (`gh api 'repos/{owner}/{repo}/deployments?environment=<env>'`, then its statuses) and compare its sha the same way.
-- **A deploy workflow on `main`**: take the newest successful run (`gh run list --workflow <file> --branch main --status success --limit 1 --json headSha`) and compare its `headSha`.
+- **GitHub deployments** whose status a rollout check sets: take the newest deployment to the dev environment whose latest status is `success` (`gh api 'repos/{owner}/{repo}/deployments?environment=<env>'`, then its statuses), and compare its `sha` the same way.
+- **The service's own report**: a health or info endpoint on dev that returns the commit it runs, when the agent can reach it.
 
-Two traps apply to all of them. A **stacked PR**, merged into another PR's branch, compares as `diverged`, since its changes reached `main` inside the PR whose head branch is its base: find that PR with `gh pr list --state merged --head <baseRefName>` and check its merge commit instead. And a merge whose paths the deploy ignores, such as docs, reaches dev only with the next merge that deploys.
+A merge whose paths the deploy ignores, such as docs, reaches dev only with the next merge that deploys. When the config's evidence cannot be read, or shows no healthy rollout, dev's state is unknown: no merge counts as on dev, every ticket keeps its status, and the report says why.
 
 ## Releases
 
@@ -79,13 +90,13 @@ With release-please, every merge to `main` joins the open release PR, whose head
 
 ```bash
 git fetch -q --tags origin
-git tag --contains <merge-commit-sha> --list '<tag prefix>*' --sort=version:refname   # releases holding the merge, oldest first; none while pending
+git tag --contains <merge-into-main-sha> --list '<tag prefix>*' --sort=version:refname   # releases holding the merge, oldest first; none while pending
 gh pr list --state open --search "head:release-please--" --json title --jq '.[].title'   # pending version: the title's last word
 gh release view <tag> --json name,publishedAt,url
 gh run list --workflow <production workflow> --limit 20 --json headBranch,conclusion --jq '.[] | select(.headBranch == "<tag>")'
 ```
 
-A ticket's release is the first release holding the last merge behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
+A ticket's release is the first release holding the last [merge into `main`](#merges-into-main) behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
 
 In Jira:
 
