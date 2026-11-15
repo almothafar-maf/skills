@@ -96,7 +96,7 @@ gh release view <tag> --json name,publishedAt,url
 gh run list --workflow <production workflow> --limit 20 --json headBranch,conclusion --jq '.[] | select(.headBranch == "<tag>")'
 ```
 
-A ticket's release is the first release holding the last [merge into `main`](#merges-into-main) behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
+A ticket has a release only once its work is complete: every PR that counts has merged, at least one, and every one of its issues is closed. While any of it is outstanding, such as a slice with no merged PR yet, the ticket gets no Fix version and no release comment, and the report lists the releases its merged PRs reached as partial progress. A complete ticket's release is the first release holding the last [merge into `main`](#merges-into-main) behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
 
 In Jira:
 
