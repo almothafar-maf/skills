@@ -17,9 +17,13 @@ Every call takes the config's cloudId. Ask searches for only the fields you need
 - **Already on dev**: create the ticket with its complete description, `How to check` included, and the in-progress transition, then `transitionJiraIssue` to testing. Re-read its status before reporting it.
 - **Rate limit**: about a dozen creates at once can answer HTTP 429 and create nothing; batches of up to five go through. After any failed create, search `project = <KEY> AND reporter = currentUser() AND created >= -1h` before retrying, so a retry never duplicates a ticket.
 
+## Editing a ticket
+
+`editJiraIssue` takes only `fields`, and each field it sends replaces the ticket's value. Read the ticket first, then send `labels` and `fixVersions` as its current list plus the new entries, and `description` as the whole description with only the intended lines changed. `assignee` takes `{"accountId": "<id>"}`.
+
 ## Workflow
 
-Choose each transition by its target status in `getTransitionsForJiraIssue`; the config's ids are hints that can change. Spikes and Bugs often run their own workflow, with other ids for the same statuses.
+Choose each transition by its target status in `getTransitionsForJiraIssue`; the config's ids are hints that can change. Spikes and Bugs often run their own workflow, with other ids for the same statuses, and each status of the To Do stage can reach the in-progress status through its own transition.
 
 ## Links
 
@@ -29,6 +33,19 @@ Choose each transition by its target status in `getTransitionsForJiraIssue`; the
 
 - **The same work**, ticketed but unassigned or assigned to someone else while the user does it: propose assigning that ticket to the user, in place of a new one.
 - **Another team's part** of the same feature: the user gets a ticket for their own part, linked to the other team's. Use `blocks` when the other team waits on it, `relates to` otherwise, so the dependency shows without a duplicate.
+
+## Assignees
+
+The user's accounts come from `gh api user --jq .login` and `atlassianUserInfo`. Anyone else's Jira account comes from the config's people list, or else from `lookupJiraAccountId` with the name on their GitHub profile, `gh api users/<login> --jq .name`; use it only when exactly one account matches, and otherwise report the mismatch without a fix.
+
+| Mismatch | Fix to propose |
+| --- | --- |
+| The user's PR under a ticket that is unassigned or assigned to someone else | Assign the ticket to the user when the PR is its work; when the PR is only the user's part, a ticket of their own, as the [overlap rules](#overlap-with-a-teammates-ticket) say |
+| An issue under the user's ticket, unassigned on GitHub | Assign the issue to the user |
+| An issue under the user's ticket, assigned to someone else on GitHub | Ask which holds: the ticket goes to that person, the issue leaves the ticket, or, with high-level tracking, it stays as the teammate's part |
+| An issue assigned to the user, under someone else's ticket | Assign the ticket to the user, or give the user a ticket of their own for their part |
+
+In Jira, `editJiraIssue` with `fields: {"assignee": {"accountId": "<id>"}}`. On GitHub, `gh issue edit <n> --add-assignee <login>`, with `--remove-assignee <login>` only for the person the approved fix replaces.
 
 ## Reporter
 
@@ -58,20 +75,22 @@ Two traps apply to all of them. A **stacked PR**, merged into another PR's branc
 
 ## Releases
 
-With release-please, every merge to `main` joins the open release PR, whose head branch starts with `release-please--` and whose title ends with the next version. Merging that PR tags the release, and the tag usually deploys production. A ticket's release is the one holding the last merge behind it:
+With release-please, every merge to `main` joins the open release PR, whose head branch starts with `release-please--` and whose title ends with the next version. Merging that PR tags the release, and the tag usually deploys production.
 
 ```bash
 git fetch -q --tags origin
-git tag --contains <merge-commit-sha> --list '<tag prefix>*' --sort=version:refname | head -1   # empty while pending
-gh pr list --state open --search "head:release-please--" --json title --jq '.[].title'          # pending version: the title's last word
+git tag --contains <merge-commit-sha> --list '<tag prefix>*' --sort=version:refname   # releases holding the merge, oldest first; none while pending
+gh pr list --state open --search "head:release-please--" --json title --jq '.[].title'   # pending version: the title's last word
 gh release view <tag> --json name,publishedAt,url
 gh run list --workflow <production workflow> --limit 20 --json headBranch,conclusion --jq '.[] | select(.headBranch == "<tag>")'
 ```
 
+A ticket's release is the first release holding the last merge behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
+
 In Jira:
 
-- **Fix version**: when the project has a version for the release, named as the config says, add it to the ticket's `fixVersions`, pending or released. Setting the field replaces it, so send the ticket's current versions plus this one. When none matches, the report says so once per release; versions usually need a project admin.
-- **Release comment**: once the tag exists and its production run succeeded, add one comment, unless the ticket already carries it: `Released to production in <Component> <version> (<release name>) on <d Mon yyyy>: <release URL>`. A release whose production run failed has not reached production.
+- **Fix version**: when the project has a version for the ticket's release, named as the config says, the ticket carries it, pending or released, and no other version of this component: replace one left from an earlier pending version, and keep the ticket's other versions, as [Editing a ticket](#editing-a-ticket) says. When none matches, the report says so once per release; versions usually need a project admin.
+- **Release comment**: once the ticket's work has reached production, add one comment, unless the ticket already carries it: `Released to production in <Component> <version> (<release name>) on <d Mon yyyy>: <release URL>`, naming the release that took it there.
 
 ## Keys on PRs
 
