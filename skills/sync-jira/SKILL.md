@@ -47,14 +47,20 @@ With high-level tracking, also list every issue of each milestone those issues b
 
 Collect the Jira side with `searchJiraIssuesUsingJql`, paging with `nextPageToken` until `isLast`: `project = <KEY> AND assignee = currentUser() AND (statusCategory != Done OR updated >= -30d)`, asking for the summary, status, issue type, labels, parent, assignee and a markdown description. Keep the tickets whose summary starts with the config's prefix, or that carry no prefix and link this repository. Then read, with `getJiraIssue`, each key the user's PRs name that this search did not return: its ticket belongs to someone else or to nobody, and step 2's assignee audit needs it.
 
-Join the two. A PR belongs to a ticket when the key is in its title scope, on the body's Jira line or on the line the Jira app appends to the body (`[<KEY>]: https://…?atlOrigin=…`), when the ticket's description links the PR, or when the description links an issue the PR closes. Only links into this repository count; a link into another repository is context. With high-level tracking, an issue also owns every PR that names it without closing it, by the repository's convention, such as `Refs #<n>`. Then widen each ticket's evidence to every PR that names its key or its issues in those places, whoever opened it and whenever. The searches below also match a key or number mentioned in passing, so they only find candidates: keep the PRs that name the key or the issue in those places. Their filter drops release PRs, whose notes name every key merged since the last release:
+Join the two. A PR belongs to a ticket when the key is in its title scope, on the body's Jira line or on the line the Jira app appends to the body (`[<KEY>]: https://…?atlOrigin=…`), when the ticket's description links the PR, or when it closes one of the ticket's issues: those its description links, plus those closed by the PRs that name its key or that its description links. With high-level tracking, a PR that names one of the ticket's issues without closing it, by the repository's convention such as `Refs #<n>`, belongs too. Only links into this repository count; a link into another repository is context.
 
-```bash
-gh pr list --state all --search "<KEY> in:title,body" --limit 100 --json "$fields" --jq '[.[] | select(.headRefName | startswith("release-please--") | not)]'
-gh pr list --state all --search "<n> in:body" --limit 100 --json "$fields" --jq '[.[] | select(.headRefName | startswith("release-please--") | not)]'
-```
+Then complete each ticket's evidence past the user's own recent PRs, whoever opened a PR and whenever, since a PR left out can move a ticket too early:
 
-**Done when** every PR, issue and milestone in scope carries a ticket key or `none`, and every ticket in scope lists every PR and issue tied to it.
+1. **PRs its description links**: read each with `gh pr view <n> --json "$fields"`.
+2. **PRs that close its issues**: for each of its issues, the milestone listing above or `gh issue view <n> --json state,stateReason,parent,closedByPullRequestsReferences` gives, by number, every PR that closes it or will on merge, open, merged or closed without merging; read each one not read yet with `gh pr view`. Such a PR counts for the ticket, while the other issues it closes stay out of it.
+3. **PRs that name its key, or with high-level tracking its issues**: the searches below. They also match a key or number mentioned in passing, so they only find candidates: keep the PRs that name the key or the issue in the places above. Their filter drops release PRs, whose notes name every key merged since the last release:
+
+   ```bash
+   gh pr list --state all --search "<KEY> in:title,body" --limit 100 --json "$fields" --jq '[.[] | select(.headRefName | startswith("release-please--") | not)]'
+   gh pr list --state all --search "<n> in:body" --limit 100 --json "$fields" --jq '[.[] | select(.headRefName | startswith("release-please--") | not)]'
+   ```
+
+**Done when** every PR, issue and milestone in scope carries a ticket key or `none`, and every ticket in scope lists every PR and issue tied to it, whoever opened them and whenever, each with its state.
 
 ## 2. Classify the untracked work, and audit keys and assignees
 
@@ -76,14 +82,14 @@ Then audit the assignees. Whoever does a ticket's work, the author of its PRs or
 
 ## 3. Work out each ticket's status
 
-Read the evidence on GitHub: each PR's state and merge commit, each linked issue's state and `stateReason`, and whether each merge is on dev by the config's rule ([On dev](./reference.md#on-dev)). A PR closed without merging stops counting once another PR covers its work; while nothing does, the ticket stays where it is and the report names that PR. An issue with sub-issues, such as a PRD, is the umbrella over them: judge it by the issues whose `parent` it is, whatever its labels. An issue closed as not planned leaves the ticket's list; say so in the report.
+Read the evidence on GitHub: each PR's state and its [merge into `main`](./reference.md#merges-into-main), the state and `stateReason` of each of the ticket's issues, and whether each merge is on dev by the config's rule ([On dev](./reference.md#on-dev)). A PR closed without merging stops counting once another PR covers its work; while nothing does, the ticket stays where it is and the report names that PR. An issue with sub-issues, such as a PRD, is the umbrella over them: judge it by the issues whose `parent` it is, whatever its labels. An issue closed as not planned leaves the ticket's list; say so in the report.
 
 | Evidence | Status |
 | --- | --- |
 | No PR yet | To Do |
 | A PR is open, draft or not, or a PR has merged while an issue is still open | In progress |
 | Every PR merged, but a merge is not on dev yet | In progress |
-| Every PR merged and on dev, and every linked issue closed as completed | Testing |
+| Every PR merged and on dev, and every one of its issues closed as completed | Testing |
 
 "Every PR" means the PRs that still count, and at least one of them. A move is due only when this status comes later than the ticket's current one.
 
