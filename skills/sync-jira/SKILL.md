@@ -1,6 +1,6 @@
 ---
 name: sync-jira
-description: "Keep a Jira project in step with a repository's GitHub work: tickets for work that needs one, Jira keys on PRs, statuses and releases that follow each ticket's PRs, and assignees that match who does the work, by the repository's Jira config, which it sets up on first use. Run as /sync-jira, alone or with PR or issue numbers, Jira keys, a date, set up, or instructions."
+description: "Keep a Jira project in step with a repository's GitHub work: tickets for work that needs one, Jira keys on PRs, statuses and releases that follow each ticket's PRs, and assignees that match who does the work, by the repository's Jira config, which it sets up on first use. Run as /sync-jira, alone or with PR or issue numbers, Jira keys, a date, set up, or instructions. A full run is slow and token-heavy; naming PRs, issues or keys keeps it small."
 argument-hint: "[PR/issue numbers, Jira keys, since <date>, set up, or instructions]"
 disable-model-invocation: true
 ---
