@@ -1,0 +1,10 @@
+{
+  "name": "almothafar",
+  "description": "Every skill in almothafar-maf/skills, such as sync-jira, which keeps a Jira project in step with a repository's GitHub work.",
+  "author": {
+    "name": "almothafar-maf",
+    "url": "https://github.com/almothafar-maf"
+  },
+  "homepage": "https://github.com/almothafar-maf/skills",
+  "repository": "https://github.com/almothafar-maf/skills"
+}
