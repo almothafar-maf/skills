@@ -59,13 +59,20 @@ https://<site>/issues/?jql=<URL-encoded: key in (<business keys>) AND reporter !
 
 ## Merges into main
 
-[On dev](#on-dev) and [Releases](#releases) both start from the commit that brought a PR's work into `main`. For a PR based on `main`, that is its merge commit. A **stacked PR**, merged into another PR's branch, reaches `main` only inside the carrying PR, whose head branch is the stacked PR's base; with squash or rebase merges, the stacked PR's own merge commit never appears on `main`. Take the carrying PR's merge commit instead, following the chain until a PR's base is `main`. The carrying PR is the one with that head branch that merged after the stacked PR did, or is still open:
+[On dev](#on-dev) and [Releases](#releases) both start from the commit that brought a PR's work into `main`. For a PR based on `main`, that is its merge commit. A PR based on a release branch, which the config's Releases line names, such as `release/*`, is a [hotfix](#hotfixes). A PR based on any other branch is a **stacked PR**, merged into another PR's branch: it reaches `main` only inside the carrying PR, whose head branch is the stacked PR's base, and with squash or rebase merges, the stacked PR's own merge commit never appears on `main`. Take the carrying PR's merge commit instead, following the chain until a PR's base is `main`. The carrying PR is the one with that head branch that merged after the stacked PR did, or is still open:
 
 ```bash
 gh pr list --state all --head <baseRefName> --json number,state,baseRefName,mergedAt,mergeCommit
 ```
 
-While the carrying PR is open, the work has not reached `main`. When it closed without merging, or merged before the stacked PR did, the work never reached `main` through it: the ticket stays where it is and the report names the stacked PR.
+While the carrying PR is open, the work has not reached `main`. When no PR carries it, or the carrying PR closed without merging or merged before the stacked PR did, the work never reached `main` through it: the ticket stays where it is and the report names the stacked PR.
+
+### Hotfixes
+
+Some repositories ship an urgent fix outside the normal release. Its PR merges into a release branch cut from a release tag, and a tag cut on that branch ships it to production. The same change reaches `main` through a separate PR, its **counterpart**, which can merge before or after it. A counterpart makes the same change, so it usually shares the hotfix's title or one of the two links the other; when none of that settles which PR it is, compare the two with `gh pr diff`.
+
+- **On dev**: the hotfix's own merge never reaches dev. It is on dev once its counterpart's merge into `main` is, and while the ticket holds no merged counterpart, the report names the hotfix as missing from `main`, since the next release from `main` would ship without it.
+- **Release**: the first tag holding the hotfix's own merge commit, found as [Releases](#releases) finds any release. Its counterpart adds no release of its own, since its change reached production with the hotfix.
 
 ## On dev
 
@@ -82,21 +89,23 @@ A merge is on dev once dev runs a build that holds it, healthy. A commit that on
 - **GitHub deployments** whose status a rollout check sets: take the newest deployment to the dev environment whose latest status is `success` (`gh api 'repos/{owner}/{repo}/deployments?environment=<env>'`, then its statuses), and compare its `sha` the same way.
 - **The service's own report**: a health or info endpoint on dev that returns the commit it runs, when the agent can reach it.
 
-A merge whose paths the deploy ignores, such as docs, reaches dev only with the next merge that deploys. When the config's evidence cannot be read, or shows no healthy rollout, dev's state is unknown: no merge counts as on dev, every ticket keeps its status, and the report says why.
+A merge whose paths the deploy ignores, such as docs, reaches dev only with the next merge that deploys, and a [hotfix](#hotfixes) is on dev once its counterpart is. When the config's evidence cannot be read, or shows no healthy rollout, dev's state is unknown: no merge counts as on dev, every ticket keeps its status, and the report says why.
 
 ## Releases
 
 With release-please, every merge to `main` joins the open release PR, whose head branch starts with `release-please--` and whose title ends with the next version. Merging that PR tags the release, and the tag usually deploys production.
 
 ```bash
-git fetch -q --tags origin
-git tag --contains <merge-into-main-sha> --list '<tag prefix>*' --sort=version:refname   # releases holding the merge, oldest first; none while pending
+git fetch -q --tags https://github.com/<owner>/<repo>.git main
+git tag --contains <sha> --list '<tag prefix>*' --sort=version:refname                   # releases holding a merge into main or a hotfix's merge, oldest first; none while pending
 gh pr list --state open --search "head:release-please--" --json title --jq '.[].title'   # pending version: the title's last word
 gh release view <tag> --json name,publishedAt,url
 gh run list --workflow <production workflow> --limit 20 --json headBranch,conclusion --jq '.[] | select(.headBranch == "<tag>")'
 ```
 
-A ticket has a release only once its work is complete: every PR that counts has merged, at least one, and every one of its issues is closed. While any of it is outstanding, such as a slice with no merged PR yet, the ticket gets no Fix version and no release comment, and the report lists the releases its merged PRs reached as partial progress. A complete ticket's release is the first release holding the last [merge into `main`](#merges-into-main) behind it, or the pending version until that release is tagged. The pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release whose run succeeded.
+The fetch reads the tags from the config's repository by URL, since a clone's `origin` can be a fork without them.
+
+A ticket has a release only once its work is complete: every PR that counts has merged, at least one, and every one of its issues is closed. While any of it is outstanding, such as a slice with no merged PR yet, the ticket gets no Fix version and no release comment, and the report lists the releases its merged PRs reached as partial progress. A complete ticket's release is the latest of its PRs' releases. A PR's release is the first release holding its [merge into `main`](#merges-into-main), or the pending version until that release is tagged; the pending version can still change, since release-please raises it when a later merge needs a bigger bump, such as a `feat` after only fixes. A [hotfix](#hotfixes) has the first release holding its own merge commit instead, and none until that tag exists, and its counterpart adds none. A release reached production when its production run succeeded; when the ticket's release failed there, its work reached production with the first later release that holds it and whose run succeeded.
 
 In Jira:
 
