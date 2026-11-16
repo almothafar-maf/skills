@@ -1,6 +1,6 @@
 # Skills
 
-Agent skills by [@almothafar-maf](https://github.com/almothafar-maf), in the [Agent Skills](https://agentskills.io) format, so Copilot, Claude Code, Codex and other agents can run them.
+Agent skills by [@almothafar-maf](https://github.com/almothafar-maf), in the [Agent Skills](https://agentskills.io) format, so Claude Code, GitHub Copilot, Cursor and other agents can run them.
 
 | Skill | What it does |
 | --- | --- |
@@ -8,20 +8,62 @@ Agent skills by [@almothafar-maf](https://github.com/almothafar-maf), in the [Ag
 
 ## Install
 
-With the GitHub CLI, once per agent:
+Every route installs all the skills here. The plugin routes also bring in skills added later, with their next update. Pick one route per agent: a skill installed twice shows up twice.
+
+| Agent | Route | Updates |
+| --- | --- | --- |
+| Claude Code | Plugin | Itself, once you turn on auto-update |
+| GitHub Copilot CLI | Plugin | Itself, once you turn on auto-update |
+| VS Code with GitHub Copilot | Plugin | Itself, daily |
+| Cursor | Files in `~/.cursor/skills` | By hand |
+| Any other agent | Files in `~/.agents/skills` | By hand |
+
+### Claude Code
 
 ```bash
-gh skill install almothafar-maf/skills sync-jira --agent claude-code --scope user
-gh skill install almothafar-maf/skills sync-jira --agent github-copilot --scope user
+claude plugin marketplace add almothafar-maf/skills
+claude plugin install almothafar@almothafar-maf
 ```
 
-Or with the `skills` CLI, for several agents at once:
+To have it update itself, run `/plugin`, open **Marketplaces**, select `almothafar-maf` and choose **Enable auto-update**. Otherwise `claude plugin update almothafar@almothafar-maf` updates it. Claude Code puts the plugin's name in front of its skills, so `/sync-jira` runs as `/almothafar:sync-jira`.
+
+### GitHub Copilot CLI
 
 ```bash
-npx skills add almothafar-maf/skills -g --agent github-copilot claude-code --skill sync-jira
+copilot plugin marketplace add almothafar-maf/skills
+copilot plugin install almothafar@almothafar-maf
 ```
 
-`gh skill update sync-jira`, or `npx skills update sync-jira -g`, brings an install up to date. Install at user scope, as above: a project install lands in the repository's `.claude/skills/`, `.github/skills/` or `.agents/skills/`, beside or over a `sync-jira` skill the repository commits there.
+To have it update itself, add `"autoUpdate": true` to the `almothafar-maf` entry that the first command wrote to `~/.copilot/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "almothafar-maf": { "source": { "source": "github", "repo": "almothafar-maf/skills" }, "autoUpdate": true }
+  }
+}
+```
+
+Otherwise `copilot plugin update almothafar@almothafar-maf` updates it. The skill runs as `/sync-jira`.
+
+### VS Code with GitHub Copilot
+
+Run **Chat: Install Plugin from Source** and enter `https://github.com/almothafar-maf/skills`. VS Code checks for updates daily while `extensions.autoUpdate` is on, as it is by default, and **Chat: Update Plugins** updates it at once. VS Code also loads plugins the Copilot CLI installed, so one of the two installs is enough. Like Claude Code, it runs the skill as `/almothafar:sync-jira`.
+
+### Cursor and any other agent
+
+```bash
+gh skill install almothafar-maf/skills --all --agent cursor --scope user     # Cursor: ~/.cursor/skills
+gh skill install almothafar-maf/skills --all --agent universal --scope user  # any other agent: ~/.agents/skills
+```
+
+`~/.agents/skills` is the shared folder that Codex and other Agent Skills agents read. Cursor and the Copilot CLI read it too, so use it for them only in place of their own route. For another agent's own folder, swap `--agent` for one that `gh skill install --help` lists, or run `gh skill install almothafar-maf/skills` alone to pick the skills, the agent and the scope from prompts.
+
+Files installed with `gh skill` do not update themselves: `gh skill update --all` refreshes them, and running the install again with `--force` adds skills published since. Keep `--scope user`, since a project install writes into the repository you run it in.
+
+## Adding a skill
+
+Put it in `skills/<name>/SKILL.md`, with a frontmatter `name` that matches the folder, and add a row for it to the table above. Plugin installs pick it up with their next update: the plugin carries no `version`, so each commit counts as a new one. `claude plugin validate .` and `claude plugin validate .claude-plugin/plugin.json` check the manifests, and their warning about the missing version is expected.
 
 ## sync-jira
 
@@ -30,3 +72,4 @@ Run `/sync-jira` in a repository, alone or followed by PR or issue numbers, Jira
 The first run in a repository drafts its Jira config, `docs/agents/jira.md`, from the repository and the Jira project, and saves it once you confirm; [config.md](skills/sync-jira/config.md) lists what it holds. A repository with its own `sync-jira` skill keeps using that one.
 
 On your own tickets it applies status moves, links, labels and release details, then lists them. It also flags a ticket or issue whose assignee is not the person doing the work, and offers the fix; by default it checks only your own work. Creating a ticket, editing a PR, changing an assignee, or changing a ticket assigned to someone else or to nobody waits for your go, unless your text already asked for it.
+
