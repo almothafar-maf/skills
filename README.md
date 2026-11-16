@@ -29,4 +29,4 @@ Run `/sync-jira` in a repository, alone or followed by PR or issue numbers, Jira
 
 The first run in a repository drafts its Jira config, `docs/agents/jira.md`, from the repository and the Jira project, and saves it once you confirm; [config.md](skills/sync-jira/config.md) lists what it holds. A repository with its own `sync-jira` skill keeps using that one.
 
-On your own tickets it applies status moves, links, labels and release details, then lists them. It also flags a ticket or issue whose assignee is not the person doing the work, and offers the fix; by default it checks only your own work. Creating a ticket, editing a PR, changing an assignee, or changing someone else's ticket waits for your go, unless your text already asked for it.
+On your own tickets it applies status moves, links, labels and release details, then lists them. It also flags a ticket or issue whose assignee is not the person doing the work, and offers the fix; by default it checks only your own work. Creating a ticket, editing a PR, changing an assignee, or changing a ticket assigned to someone else or to nobody waits for your go, unless your text already asked for it.

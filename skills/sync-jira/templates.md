@@ -8,7 +8,7 @@ A Jira-side template wins when the project has one: `getJiraIssueTypeMetaWithFie
 
 - **Title**: `[<Prefix>] <Area>: <outcome in plain words>` for a Story, Task or Spike. A Bug's title names the problem as the user meets it, with the environment when only one has it: `[<Prefix>] <Area>: <what goes wrong> (prod)`.
 - **Plain words**: what the user, customer or client app sees, never class or field names alone. The detail stays on GitHub, and the ticket links it.
-- **Evidence without secrets**: a request, response or log keeps its shape and loses its API keys, tokens and cookies.
+- **Evidence without secrets or identities**: a request, response or log keeps its shape and loses its API keys, tokens and cookies, and every value that identifies a person or a client, such as a name, an email, a phone number, or a user, member or client id. A placeholder such as `<user-id>` takes each one's place.
 - **Only what applies**: a section with nothing to say is left out, never filled with "N/A".
 
 ## Per-change tracking
@@ -46,7 +46,7 @@ For a defect, when no reported ticket covers it already.
 
 **Where:** <environment, tenant or store, page or endpoint>
 
-**Evidence:** <request and response, log line or screenshot, secrets removed>
+**Evidence:** <request and response, log line or screenshot, with secrets and identifying values replaced by placeholders>
 
 **Fix:** <one line, once known>
 
