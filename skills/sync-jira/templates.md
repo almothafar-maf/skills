@@ -9,7 +9,7 @@ A Jira-side template wins when the project has one: `getJiraIssueTypeMetaWithFie
 - **Title**: `[<Prefix>] <Area>: <outcome in plain words>` for a Story, Task or Spike. A Bug's title names the problem as the user meets it, with the environment when only one has it: `[<Prefix>] <Area>: <what goes wrong> (prod)`.
 - **Plain words**: what the user, customer or client app sees, never class or field names alone. The detail stays on GitHub, and the ticket links it.
 - **Evidence without secrets or identities**: a request, response or log keeps its shape and loses its API keys, tokens and cookies, and every value that identifies a person or a client, such as a name, an email, a phone number, or a user, member or client id. A placeholder such as `<user-id>` takes each one's place.
-- **Many findings**: a ticket whose issues are more than ten findings from one scanner, such as a security scanner's, gives their count and range on its GitHub line in place of a link each, linking the first and the last: `101 Pipeline Scan findings, from #544 to #647`.
+- **Many findings**: a ticket covering more than ten findings from one scanner, such as a security scanner's, gives their count on its GitHub line, `103 Pipeline Scan findings, listed below`, and a link to each, comma-separated, in a `GitHub issue inventory` section that ends the description. Every edit keeps that section whole, since the next sync reads the ticket's issues from it, and a count or a range of numbers cannot say which issues those are.
 - **Only what applies**: a section with nothing to say is left out, never filled with "N/A".
 
 ## Per-change tracking
@@ -69,6 +69,8 @@ For technical work. A Sub-task uses it too, shorter.
 **How to check:** <what QA can see on dev; with no visible change, "No visible change" and the areas to regression-check>
 
 **GitHub (<repo>):** <links, as for a Story>
+
+**GitHub issue inventory:** <only for more than ten findings from one scanner: a link to each, comma-separated>
 ```
 
 ### Spike
