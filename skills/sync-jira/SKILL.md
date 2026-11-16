@@ -55,7 +55,7 @@ Join the two. A PR belongs to a ticket when the key is in its title scope, on th
 Then complete each ticket's evidence past the user's own recent PRs, whoever opened a PR and whenever, since a PR left out can move a ticket too early:
 
 1. **PRs its description links**: read each with `gh pr view <n> --json "$fields"`.
-2. **PRs that close its issues**: for each of its issues, the milestone listing above or `gh issue view <n> --json state,stateReason,parent,closedByPullRequestsReferences` gives, by number, every PR that closes it or will on merge, open, merged or closed without merging; read each one not read yet with `gh pr view`. Such a PR counts for the ticket, while the other issues it closes stay out of it.
+2. **PRs that close its issues**: its issues include every one its `GitHub issue inventory` links. A count or a range on a GitHub line in place of links, such as `from #544 to #647`, identifies only the issues it links: the ones between join only when the ticket's PRs close them, and while fewer join than the count, the ticket's evidence is incomplete, so it keeps its status and gets no release, and the report names the gap. For each of its issues, the milestone listing above or `gh issue view <n> --json state,stateReason,parent,closedByPullRequestsReferences` gives, by number, every PR that closes it or will on merge, open, merged or closed without merging; read each one not read yet with `gh pr view`. Such a PR counts for the ticket, while the other issues it closes stay out of it.
 3. **PRs that name its key, or with high-level tracking its issues**: the searches below, whose filters drop release PRs, since their notes name every key merged since the last release. The key search also matches a key mentioned in passing, so it only finds candidates: keep the PRs that name the key in the places above. The issue search keeps only the PRs whose `Refs` line names `#<n>`; change its pattern when the repository marks the link another way:
 
    ```bash
@@ -102,7 +102,7 @@ Read the evidence on GitHub: each PR's state and its [merge into `main`](./refer
 
 Work through each ticket assigned to the current user in this order, since a QA team may generate test cases from the description once a ticket reaches testing:
 
-1. Bring the description up to date, changing only what this step adds ([Editing a ticket](./reference.md#editing-a-ticket)): add each PR or issue missing from its GitHub line, with dozens of findings from one scanner as a count and a range ([templates.md](./templates.md#writing-rules)), and give a ticket about to reach testing a `How to check`, written to [templates.md](./templates.md).
+1. Bring the description up to date, changing only what this step adds ([Editing a ticket](./reference.md#editing-a-ticket)): add each PR or issue missing from its GitHub line, with more than ten findings from one scanner as a count there and a link each in the `GitHub issue inventory`, from which no edit drops an issue ([templates.md](./templates.md#writing-rules)), and give a ticket about to reach testing a `How to check`, written to [templates.md](./templates.md).
 2. Add the labels the config says the ticket is missing, sending its current labels with them, since `editJiraIssue` sets the whole list.
 3. Re-read the ticket, then transition it, through the in-progress status when it starts in the To Do stage. A ticket whose description edit failed keeps its status.
 4. Record its release once its work is complete, when the config names a release tool ([Releases](./reference.md#releases)).
