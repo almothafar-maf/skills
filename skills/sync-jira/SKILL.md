@@ -79,7 +79,7 @@ With **high-level** tracking, group what is left: a milestone, or a PRD and its 
 
 The config can change which classes get a ticket. Then audit the keys, when the config puts keys on PRs: every open PR tied to a ticket goes on the **PR edits** list for step 5 when its title scope holds none of its tickets' keys, or its body's Jira line misses any of them. A title holds one key, so a PR tied to two tickets passes with either key in its title and both on its Jira line.
 
-Then audit the assignees. Whoever does a ticket's work, the author of its PRs or, before the first PR, the assignee of its issues, should be its Jira assignee and the GitHub assignee of its issues; a high-level ticket stays the user's while teammates hold some of its issues. By default only a mismatch that involves the user counts: the user's PR under a ticket that is unassigned or assigned to someone else, an issue under the user's ticket that is unassigned or assigned to someone else on GitHub, unless the user approved it as a teammate's part, or an issue assigned to the user under someone else's ticket. Each goes on the **Assignees** list for step 5, with the fix [Assignees](./reference.md#assignees) gives. Other people's mismatches count only when the text asks.
+Then audit the assignees. Whoever does a ticket's work, the author of its PRs or, before the first PR, the assignee of its issues, should be its Jira assignee and the GitHub assignee of its issues; a high-level ticket stays the user's while teammates hold some of its issues. By default only a mismatch that involves the user counts: the user's PR under a ticket that is unassigned or assigned to someone else, an issue under the user's ticket that is unassigned or assigned to someone else on GitHub, unless the user approved it as a teammate's part, or an issue assigned to the user under someone else's ticket. Closed issues are left out, since nobody works on them any more. Each goes on the **Assignees** list for step 5, with the fix [Assignees](./reference.md#assignees) gives. Other people's mismatches count only when the text asks.
 
 **Done when** every untracked item is matched, classed or grouped, every open PR missing a key is on the PR edits list, and every assignee mismatch in scope is on the Assignees list.
 
@@ -102,7 +102,7 @@ Read the evidence on GitHub: each PR's state and its [merge into `main`](./refer
 
 Work through each ticket assigned to the current user in this order, since a QA team may generate test cases from the description once a ticket reaches testing:
 
-1. Bring the description up to date, changing only what this step adds ([Editing a ticket](./reference.md#editing-a-ticket)): add each PR or issue missing from its GitHub line, and give a ticket about to reach testing a `How to check`, written to [templates.md](./templates.md).
+1. Bring the description up to date, changing only what this step adds ([Editing a ticket](./reference.md#editing-a-ticket)): add each PR or issue missing from its GitHub line, with dozens of findings from one scanner as a count and a range ([templates.md](./templates.md#writing-rules)), and give a ticket about to reach testing a `How to check`, written to [templates.md](./templates.md).
 2. Add the labels the config says the ticket is missing, sending its current labels with them, since `editJiraIssue` sets the whole list.
 3. Re-read the ticket, then transition it, through the in-progress status when it starts in the To Do stage. A ticket whose description edit failed keeps its status.
 4. Record its release once its work is complete, when the config names a release tool ([Releases](./reference.md#releases)).
@@ -113,33 +113,41 @@ A ticket assigned to someone else or to nobody gets none of these changes here: 
 
 ## 5. Propose the rest, then wait
 
-Anything the text after `/sync-jira` already approved is applied now, as step 6 describes, and listed under **Already applied**. Draft each new ticket by [templates.md](./templates.md), with the config's prefix, issue type, epic and labels. For each ticket in scope assigned to someone else or to nobody, list the changes step 4 would make to it. Show the plan in this shape, then end the turn:
+Anything the text after `/sync-jira` already approved is applied now, as step 6 describes, and listed under **Already applied**. Draft each new ticket by [templates.md](./templates.md), with the config's prefix, issue type, epic and labels. For each ticket in scope assigned to someone else or to nobody, list the changes step 4 would make to it. Show the plan in this shape, then end the turn. Number every item that needs the user's answer from 1, across all its sections, so one reply such as `go` or `go, drop 3` settles them all. The decisions come first and what is already applied after them, and the waiting line opens and closes the plan, so the request is the first and the last thing in the reply:
 
 ```markdown
-**New tickets** (reply `go`, or name the numbers to change or drop)
+> ⏸️ **Waiting for your answer: 6 items.** Reply `go` to apply them all, or name the numbers to change or drop, such as `go, drop 3`.
+
+**New tickets**
 1. `[<Prefix>] <Area>: <outcome>`: Story, epic <KEY>, labels <labels>, starts in <status>. From #<issue> and PR #<pr>. <one-line summary>
 
 **PR edits**
-- PR #<n>: title `feat(<KEY>): …`, and the key on the body's Jira line
+2. PR #<n>: title `feat(<KEY>): …`, and the key on the body's Jira line
 
 **Scope changes**
-- <KEY>: add #<n>, a teammate's issue new in its milestone
+3. <KEY>: add #<n>, a teammate's issue new in its milestone
 
 **Assignees**
-- <KEY>: assigned to <name>, but its work is your PR #<n>: assign it to you
-- #<n>: unassigned on GitHub, under your <KEY>: assign it to you
+4. <KEY>: assigned to <name>, but its work is your PR #<n>: assign it to you
+5. #<n>: unassigned on GitHub, under your <KEY>: assign it to you
 
 **Tickets not assigned to you**
-- <KEY>, assigned to <name>: → <testing status>, since PR #<n> is on dev; add PR #<n> to its GitHub line
+6. <KEY>, assigned to <name>: → <testing status>, since PR #<n> is on dev; add PR #<n> to its GitHub line
+
+---
 
 **Already applied**
 - <KEY> → <testing status>: PR #<n> is on dev
 
 **Skipped**
 - #<n> `chore(deps): …`, maintenance
+
+> ⏸️ **Waiting for your answer on items 1 to 6.** Reply `go`, or name the numbers to change or drop.
 ```
 
 When the plan has no new tickets, PR edits, scope changes, assignee changes or changes to tickets not assigned to the user, go straight to step 7.
+
+The plan stays open until the user answers it. When their next message is about something else, handle that, and start the reply, and every later one in the session, with the waiting line, until the user answers the plan or drops it.
 
 **Done when** the user has answered.
 
@@ -157,4 +165,4 @@ When the plan has no new tickets, PR edits, scope changes, assignee changes or c
 
 Re-read every ticket you touched: status, sprint, epic, labels, links and assignee. Re-read every PR you edited: its title, its body, and its checks. Re-read the assignees of every issue you changed.
 
-Report what changed, with links; what was skipped, and why; and what is left for the user, such as a ticket whose status disagrees with GitHub. When the config names who should report business tickets and the run created or found some reported by someone else, end with the bulk-change search from [Reporter](./reference.md#reporter).
+Report what is left for the user first, such as a ticket whose status disagrees with GitHub, then what changed, with links, and what was skipped, and why. When the config names who should report business tickets and the run created or found some that the user reported, end with the bulk-change search from [Reporter](./reference.md#reporter).
