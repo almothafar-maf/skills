@@ -73,3 +73,6 @@ The first run in a repository drafts its Jira config, `docs/agents/jira.md`, fro
 
 On your own tickets it applies status moves, links, labels and release details, then lists them. It also flags a ticket or issue whose assignee is not the person doing the work, and offers the fix; by default it checks only your own work. Creating a ticket, editing a PR, changing an assignee, or changing a ticket assigned to someone else or to nobody waits for your go, unless your text already asked for it.
 
+### Cost
+
+A run takes a while and uses a lot of tokens, since it reads every PR, issue and ticket in its scope to the last page and re-reads each ticket it changes. A full run on one repository, over 29 tickets and 40 merged PRs, took about 35 minutes and 92 model calls on Claude Opus 5.5, reading about 25 million input tokens, most of them from the prompt cache, and writing about 220 thousand. A narrower run reads less: name PRs, issues, Jira keys or a date, and keep the full run for a regular check-in, such as once a week or after a release.
