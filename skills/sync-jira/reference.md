@@ -49,10 +49,10 @@ In Jira, `editJiraIssue` with `fields: {"assignee": {"accountId": "<id>"}}`. On 
 
 ## Reporter
 
-Reporter is usually missing from the create and edit screens for anyone without the Modify Reporter permission, so the tools cannot set it. When the config names who should report business tickets, the report ends with a search that person can bulk-change, by selecting all, then Bulk change, Edit Issues and Change Reporter:
+Reporter is usually missing from the create and edit screens for anyone without the Modify Reporter permission, so the tools cannot set it. When the config names who should report business tickets, the report ends with a search that person can bulk-change, by selecting all, then Bulk change, Edit Issues and Change Reporter. It lists only the user's own tickets, raised on that person's behalf; a ticket someone else reported keeps its reporter:
 
 ```text
-https://<site>/issues/?jql=<URL-encoded: key in (<business keys>) AND reporter != <account id> ORDER BY key ASC>
+https://<site>/issues/?jql=<URL-encoded: key in (<business keys>) AND reporter = <the user's account id> ORDER BY key ASC>
 ```
 
 `lookupJiraAccountId` with their name gives the account id.
