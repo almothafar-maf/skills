@@ -4,30 +4,30 @@ The facts `/sync-jira` relies on whatever the repository. The repository's value
 
 ## Atlassian tools
 
-The Atlassian MCP server provides the Jira tools, under a client-specific prefix such as `com-atlassian-atlassian-mcp-server-` or `mcp__atlassian__`. A run uses `atlassianUserInfo`, `getAccessibleAtlassianResources`, `searchJiraIssuesUsingJql`, `getJiraIssue`, `getJiraIssueTypeMetaWithField`, `getTransitionsForJiraIssue`, `transitionJiraIssue`, `createJiraIssue`, `editJiraIssue`, `createIssueLink`, `addCommentToJiraIssue` and `lookupJiraAccountId`. A client that defers tools loads them through its tool search by exact name. When none of them loads, stop and ask the user to connect the Atlassian MCP server: GitHub alone cannot sync anything.
+The Atlassian MCP server provides the Jira tools, under a client-specific prefix such as `com-atlassian-atlassian-mcp-server-` or `mcp__atlassian__`. A run uses `atlassianUserInfo`, `getAccessibleAtlassianResources`, `searchJiraIssuesUsingJql`, `getJiraIssue`, `getJiraIssueTypeMetaWithField`, `listJiraBoardSprints`, `listJiraIssueTransitions`, `transitionJiraIssue`, `createJiraIssue`, `editJiraIssue`, `createJiraIssueLink`, `addOrEditJiraIssueComment` and `lookupJiraAccountId`. A client that defers tools loads them through its tool search by exact name. When none of them loads, stop and ask the user to connect the Atlassian MCP server: GitHub alone cannot sync anything.
 
 Every call takes the config's cloudId. Ask searches for only the fields you need, read descriptions with `responseContentFormat: markdown`, and page each search with `nextPageToken` until `isLast` is true.
 
 ## Creating a ticket
 
-`createJiraIssue` with the project key, the issue type, the epic as `parent` (a Sub-task's parent is its Task), the current user's account id as `assignee_account_id`, `contentFormat: markdown`, and in `additional_fields` the config's required fields, its sprint field and its labels. A Sub-task takes its parent's sprint, so leave the sprint field off.
+`createJiraIssue` with the project key as `projectKey`, the issue type as `issueType`, the epic as `parent` (a Sub-task's parent is its Task), the current user's account id as `assignee`, `contentFormat: markdown`, the config's labels as `labels`, the sprint's id as `assignToSprint`, and the config's required fields in `additional_fields`. A Sub-task takes its parent's sprint, so leave `assignToSprint` off.
 
-- **Active sprint**: search `project = <KEY> AND sprint in openSprints()` for the sprint field, paging until an entry has the config's `boardId` and `state` `active`, and use its `id` as a number. Other boards may run sprints with similar names at the same time, so match the board id, never the name.
-- **Starting status**: `transition` with the in-progress transition id starts the ticket there; without it, the ticket starts in To Do.
-- **Already on dev**: create the ticket with its complete description, `How to check` included, and the in-progress transition, then `transitionJiraIssue` to testing. Re-read its status before reporting it.
+- **Sprint**: `listJiraBoardSprints` for the config's board with `state` `active` lists every sprint running on the board, including other boards' sprints that share its tickets, so keep the one whose `originBoardId` is the config's board. When none is, use the first sprint that `state` `future` lists with that `originBoardId`, the next one the team starts. Other boards may run sprints with the same names at the same time, so match the board id, never the name. A response with `sprintAssignment.assigned: false` still created the ticket: set its sprint with `transitionJiraIssue`'s `sprintId` instead of creating it again.
+- **Starting status**: a new ticket starts in To Do; `transitionJiraIssue` with the in-progress transition's id as `transitionId` moves it on after the create.
+- **Already on dev**: create the ticket with its complete description, `How to check` included, then `transitionJiraIssue` to the in-progress status and on to testing. Re-read its status before reporting it.
 - **Rate limit**: about a dozen creates at once can answer HTTP 429 and create nothing; batches of up to five go through. After any failed create, search `project = <KEY> AND reporter = currentUser() AND created >= -1h` before retrying, so a retry never duplicates a ticket.
 
 ## Editing a ticket
 
-`editJiraIssue` takes only `fields`, and each field it sends replaces the ticket's value. Read the ticket first, then send `labels` and `fixVersions` as its current list plus the new entries, and `description` as the whole description with only the intended lines changed. `assignee` takes `{"accountId": "<id>"}`.
+`editJiraIssue` sets each field it sends in `fields`, replacing the ticket's value. Read the ticket first, then send `labels` and `fixVersions` as its current list plus the new entries, and `description` as the whole description with only the intended lines changed. `assignee` takes `{"accountId": "<id>"}`.
 
 ## Workflow
 
-Choose each transition by its target status in `getTransitionsForJiraIssue`; the config's ids are hints that can change. Spikes and Bugs often run their own workflow, with other ids for the same statuses, and each status of the To Do stage can reach the in-progress status through its own transition.
+Choose each transition by its target status in `listJiraIssueTransitions`, and pass its id to `transitionJiraIssue` as `transitionId`; the config's ids are hints that can change. Spikes and Bugs often run their own workflow, with other ids for the same statuses, and each status of the To Do stage can reach the in-progress status through its own transition.
 
 ## Links
 
-`createIssueLink` reads as "`inwardIssue` <outward verb> `outwardIssue`": type `Blocks` with `inwardIssue` A and `outwardIssue` B records "A blocks B". Check the result once on the ticket: the direction is easy to invert.
+`createJiraIssueLink` reads as "`inwardIssue` <outward verb> `outwardIssue`": `linkType` `Blocks` with `inwardIssue` A and `outwardIssue` B records "A blocks B". Check the result once on the ticket: the direction is easy to invert.
 
 ### Overlap with a teammate's ticket
 
