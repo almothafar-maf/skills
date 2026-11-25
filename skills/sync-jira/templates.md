@@ -2,7 +2,7 @@
 
 How a ticket reads. Tickets in most projects vary: a bug report with current and expected behaviour side by side is the model, and a ticket with no description is the failure to avoid. A QA team may turn descriptions into test cases, so every ticket says what to check.
 
-A Jira-side template wins when the project has one: `getJiraIssueTypeMetaWithField` for the issue type then shows the Description field with a default value. Until then, use these.
+A Jira-side template wins when the project has one: `getJiraIssueTypeMetaWithFields` for the issue type then shows the Description field with a default value. Until then, use these.
 
 ## Writing rules
 

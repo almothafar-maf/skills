@@ -67,7 +67,7 @@ Put it in `skills/<name>/SKILL.md`, with a frontmatter `name` that matches the f
 
 ## sync-jira
 
-Run `/sync-jira` in a repository, alone or followed by PR or issue numbers, Jira keys, a date, or instructions such as `statuses only`, `create missing tickets` or `fix assignees`. It needs the Atlassian MCP server connected in your agent and `gh` signed in.
+Run `/sync-jira` in a repository, alone or followed by PR or issue numbers, Jira keys, a date, or instructions such as `statuses only`, `create missing tickets` or `fix assignees`. It needs the Atlassian MCP server connected in your agent at `https://mcp.atlassian.com/v2/mcp?tools=all`, and `gh` signed in.
 
 The first run in a repository drafts its Jira config, `docs/agents/jira.md`, from the repository and the Jira project, and saves it once you confirm; [config.md](skills/sync-jira/config.md) lists what it holds. A repository with its own `sync-jira` skill keeps using that one.
 
