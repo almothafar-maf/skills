@@ -26,10 +26,10 @@ Read by the `sync-jira` skill.
 - **Issue types**: Story for user-visible work, Bug for a defect, Task for technical work, Spike for a decision, Sub-task under a parent Task
 - **Epics**: `<EPIC-KEY>` for <the work it holds>
 - **Required fields**: `<field id>` = `<value>`, with the option's name
-- **Sprint**: field `<customfield id>`, the active sprint of board <id>; match the board id, never the sprint name
+- **Sprint**: field `<customfield id>`, the active sprint of board <id>, or its next future sprint when none of its own is active; match the board id, never the sprint name
 - **Labels**: `<label>` on <which tickets>; leave alone: <labels an automation or another team owns>
 - **Statuses**: To Do stage = `<names>`, every status in Jira's To Do category, such as To Do and Ready for Development; in progress = `<name>` (transition <id>, or <id> from `<status>` where a To Do-stage status has its own); testing = `<name>` (transition <id>); owned by others = `<names>`, such as QA's and other teams' statuses
-- **On dev**: <the evidence that dev runs a merge, healthy, such as "the newest successful run of `build-deploy-dev.yml`, whose `Argocd sync and wait` step passed, holds the merge"; an image tag in a values file shows only what dev should run>
+- **On dev**: <the evidence that dev runs a merge, healthy, such as "the newest successful run of `deploy-dev.yml`, whose `Wait for rollout` step passed, holds the merge"; an image tag in a values file shows only what dev should run>
 - **Releases**: <tool, tag prefix, the workflow that deploys a tag to production, and the release branches hotfixes merge into, such as `release/*`, if any>; Jira versions named like `<Component> <version>`
 - **Keys on PRs**: <where a key goes in a PR title and body, and the check that enforces it>, or none
 - **Reporter**: business tickets should be reported by <name>; the tools cannot set it

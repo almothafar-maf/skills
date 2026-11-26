@@ -1,6 +1,6 @@
 ---
 name: sync-jira
-description: "Keep a Jira project in step with a repository's GitHub work: tickets for work that needs one, Jira keys on PRs, statuses and releases that follow each ticket's PRs, and assignees that match who does the work, by the repository's Jira config, which it sets up on first use. Run as /sync-jira, alone or with PR or issue numbers, Jira keys, a date, set up, or instructions. A full run is slow and token-heavy; naming PRs, issues or keys keeps it small."
+description: "Keep a Jira project in step with a repository's GitHub work: tickets for work that needs one, Jira keys on PRs, statuses and releases that follow each ticket's PRs, and assignees that match who does the work, by the repository's Jira config, which it sets up on first use. A full run is slow and token-heavy; naming PRs, issues or keys keeps it small."
 argument-hint: "[PR/issue numbers, Jira keys, since <date>, set up, or instructions]"
 disable-model-invocation: true
 ---
@@ -32,7 +32,7 @@ The Atlassian and GitHub mechanics are in [reference.md](./reference.md), the co
 
 Identify the user, the person both sides act for: `gh api user --jq .login` on GitHub, `atlassianUserInfo` in Jira. The defaults below, from the scope to the assignee audit, are about this person.
 
-Every `gh` command in the run targets the config's repository, step 6's edits included, since `gh` otherwise picks a repository from the clone's remotes, which can name a fork. Start every shell with `export GH_REPO=<owner>/<repo>`, which `gh api` also follows for `{owner}/{repo}`.
+Every `gh` command in the run targets the config's repository, step 6's edits included, since `gh` otherwise picks a repository from the clone's remotes, which can name a fork. Start every shell with `export GH_REPO=<owner>/<repo>`, which `gh api` also follows for `{owner}/{repo}`. A `gh` list stops at its `--limit`: when one returns exactly that many, raise the limit and run it again, so no list ends early.
 
 Collect the GitHub side, in one shell, since later commands reuse `fields`:
 
@@ -149,7 +149,7 @@ When the plan has no new tickets, PR edits, scope changes, assignee changes or c
 
 The plan stays open until the user answers it. When their next message is about something else, handle that, and start the reply, and every later one in the session, with the waiting line, until the user answers the plan or drops it.
 
-**Done when** the user has answered.
+**Done when** the user has answered, or the plan had nothing for them to answer.
 
 ## 6. Apply what the user approved
 
@@ -166,3 +166,5 @@ The plan stays open until the user answers it. When their next message is about 
 Re-read every ticket you touched: status, sprint, epic, labels, links and assignee. Re-read every PR you edited: its title, its body, and its checks. Re-read the assignees of every issue you changed.
 
 Report what is left for the user first, such as a ticket whose status disagrees with GitHub, then what changed, with links, and what was skipped, and why. When the config names who should report business tickets and the run created or found some that the user reported, end with the bulk-change search from [Reporter](./reference.md#reporter).
+
+**Done when** every ticket, PR and issue the run changed has been re-read, and the report is shown.
