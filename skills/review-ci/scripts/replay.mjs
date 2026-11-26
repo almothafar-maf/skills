@@ -8,8 +8,9 @@
 // the pool ran, from every repository that shares it. In the replay each job takes the runner that frees up first,
 // starts --pickup seconds later, and holds the runner for its run time plus a re-create gap. The gap is --gap seconds,
 // or drawn at random from --gaps, a file of gaps in seconds, or, with --calibrate, the fixed gap whose replay on the
-// pool's size during the period comes closest to the measured median and slowest-10% wait. --load replays the same jobs
-// arriving that many times as often. Prints the measured wait, then the replayed waits for each pool size and load.
+// pool's size during the period comes closest to the measured median and slowest-10% wait, with a warning when even
+// that gap misses them widely. --load replays the same jobs arriving that many times as often. Prints the
+// measured wait, then the replayed waits for each pool size and load.
 import { readFileSync } from 'node:fs';
 
 const usage = 'usage: node replay.mjs <pool.tsv> (--calibrate <runners> | --gap <s> | --gaps <file>) [--runners 2-8] '
@@ -94,16 +95,22 @@ function replay(runners, load) {
 const measured = jobs.map((job) => job.wait);
 console.log(`Measured: ${jobs.length} jobs, ${summary(measured)}.`);
 if (option('calibrate') !== undefined) {
+  const maxGap = 120;
   const miss = (waits) => Math.abs(quantile(waits, 0.5) - quantile(measured, 0.5))
     + Math.abs(quantile(waits, 0.9) - quantile(measured, 0.9));
   let best;
-  for (let gap = 0; gap <= 120; gap++) {
+  for (let gap = 0; gap <= maxGap; gap++) {
     gaps = [gap];
     const waits = replay(current, 1);
     if (best === undefined || miss(waits) < best.miss) best = { gap, miss: miss(waits), waits };
   }
   gaps = [best.gap];
   console.log(`Calibrated gap: ${best.gap} s, replaying ${current} runners at ${summary(best.waits)}.`);
+  if (best.miss > Math.max(5, (quantile(measured, 0.5) + quantile(measured, 0.9)) / 4)) {
+    console.error(`No gap from 0 to ${maxGap} s replays the measured waits: the closest, ${best.gap} s, misses them by `
+      + `${best.miss} s. Check the runner count given to --calibrate, and that the jobs come from every repository on `
+      + 'the pool.');
+  }
 }
 for (let runners = fewest; runners <= most; runners++) {
   const results = loads.map((load) => `load ${load}: ${summary(replay(runners, load))}`);

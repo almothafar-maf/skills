@@ -1,6 +1,6 @@
 ---
 name: review-ci
-description: "Review a repository's GitHub Actions pull request pipelines from its own run history, then cut repeated, needless and queued jobs while every required check keeps reporting. Run as /review-ci, alone or with a period, workflow names, re-measure, or instructions. Measuring a busy repository's month takes thousands of API requests."
+description: "Review a repository's GitHub Actions pull request pipelines from its own run history, then cut repeated, needless and queued jobs while every required check keeps reporting. Measuring a busy repository's month takes thousands of API requests."
 argument-hint: "[period, workflow names, re-measure, or instructions]"
 disable-model-invocation: true
 ---
@@ -23,7 +23,7 @@ The metrics, the waste patterns and their fixes, pool sizing and cost are in [re
 
 ## 1. Map the setup
 
-List every workflow that runs on pull request events, and every workflow those start through `workflow_run`. For each, note its events and their `types`, its `concurrency`, and for each job its `runs-on`, `if:` and `needs:`, including the jobs of each reusable workflow it calls from another repository. Read the checks a merge requires from the default branch's rulesets, `gh api repos/{owner}/{repo}/rules/branches/<default branch>`, and from its classic branch protection, `gh api repos/{owner}/{repo}/branches/<default branch>/protection/required_status_checks`, which answers 404 when there is none. For each runner pool, find out whether it is GitHub-hosted or self-hosted, ephemeral or persistent, fixed or autoscaled, and which other repositories use it; ask the user what the repository cannot tell you.
+List every workflow that runs on pull request events, and every workflow those start through `workflow_run`. For each, note its events and their `types`, its `concurrency`, and for each job its `runs-on`, `if:` and `needs:`, including the jobs of each reusable workflow it calls from another repository. Read the checks a merge requires from the default branch's rulesets, `gh api repos/{owner}/{repo}/rules/branches/<default branch>`, and from its classic branch protection, `gh api repos/{owner}/{repo}/branches/<default branch> --jq .protection.required_status_checks.contexts`, which read access can see; the `/protection` endpoints answer 404 to anyone who is not an admin. For each runner pool, find out whether it is GitHub-hosted or self-hosted, ephemeral or persistent, fixed or autoscaled, and which other repositories use it; ask the user what the repository cannot tell you.
 
 Find when the pipeline took its current shape, with `git log -- .github/workflows`: weeks before a big change measure a different pipeline.
 
@@ -34,15 +34,15 @@ Find when the pipeline took its current shape, with `git log -- .github/workflow
 The period is the last four complete weeks, or the weeks since the pipeline took its current shape. The **baseline** is the latest complete week, and the weeks before it show whether it is typical. With `re-measure`, the baseline is the last complete week before the first change, and each change starts a period of its own at its merge.
 
 1. Count the runs: `node <skill>/scripts/fetch.mjs <owner/repo> <from> <to> <dir> --runs-only`.
-2. Fetch the jobs: `node <skill>/scripts/fetch.mjs <owner/repo> <from> <to> <dir> --events pull_request,pull_request_target`, sampling as [Metrics](./reference.md#metrics) says when the rate limit cannot cover every run.
-3. Import them: `sqlite3 <dir>/ci.db -cmd '.mode tabs' '.import <dir>/runs.tsv runs' '.import <dir>/jobs.tsv jobs'`.
-4. Fill `required`, `periods`, one for each week, and `kinds` as [Metrics](./reference.md#metrics) describes, then run `sqlite3 -header -column <dir>/ci.db < <skill>/scripts/metrics.sql`.
+2. Fetch the jobs: `node <skill>/scripts/fetch.mjs <owner/repo> <from> <to> <dir> --events pull_request,pull_request_target`, sampling as [Metrics](./reference.md#metrics) says when the rate limit cannot cover every run. Leave `--events` off when step 1 found `workflow_run` workflows or a runner pool to size, since their jobs come from other events; `metrics.sql` reads only the pull request runs either way.
+3. Import them into a new database, since an import into tables that exist adds every row again, its header row with them: `rm -f <dir>/ci.db && sqlite3 <dir>/ci.db -cmd '.mode tabs' '.import <dir>/runs.tsv runs' '.import <dir>/jobs.tsv jobs'`.
+4. Create and fill `required`, `periods`, one for each week, and `kinds` as [Metrics](./reference.md#metrics) describes, then run `sqlite3 -header -column <dir>/ci.db < <skill>/scripts/metrics.sql`.
 
 **Done when** every metric has a figure for each week, and each way the baseline differs from the weeks before it is written down.
 
 ## 3. Find the waste
 
-Check the data against every pattern in [Patterns](./reference.md#patterns), and look for waste they do not name. For each, record whether the data shows it, what it costs per push and per month, and its fix and owner.
+Check the data against every pattern in [Patterns](./reference.md#patterns), and look for waste they do not name. For each, record whether the data shows it, what it costs per push and per month, and its fix and owner. Workflow names in the text limit this search to their waste; the measurements still cover every workflow, since time to green waits on every required check.
 
 **Done when** every pattern is marked present, with its cost, or absent.
 

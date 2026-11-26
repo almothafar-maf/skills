@@ -4,7 +4,7 @@ The definitions, waste patterns and methods `/review-ci` relies on, whatever the
 
 ## Metrics
 
-[`metrics.sql`](./scripts/metrics.sql) computes these for each period from the `runs` and `jobs` tables imported from `fetch.mjs`'s output. It reads three tables you fill:
+[`metrics.sql`](./scripts/metrics.sql) computes these for each period from the `runs` and `jobs` tables imported from `fetch.mjs`'s output. It reads three tables you create in the same database, `CREATE TABLE required(name TEXT); CREATE TABLE periods(label TEXT, start_at TEXT, end_at TEXT); CREATE TABLE kinds(sha TEXT PRIMARY KEY, kind TEXT);`, and fill:
 
 - `required(name)`: the checks a merge requires, by job name. A job of a reusable workflow reports as `<calling job> / <called job>`.
 - `periods(label, start_at, end_at)`: UTC ISO times, such as `2025-01-06T00:00:00Z`; a push belongs to the period its first run falls in.
@@ -22,7 +22,7 @@ The definitions:
 
 Medians and the slowest 10% are nearest-rank, in `metrics.sql` and `replay.mjs` alike: the value at position ⌈p·n⌉ of the sorted n values, so the median of an even count is the lower middle one.
 
-Fetching: `fetch.mjs` lists every run in the period, halving the date range until each part is under the 1,000 runs the API returns for one query, then reads each run's jobs, one request per run. `gh api rate_limit` shows the requests left this hour, and the script sleeps through the limit when it runs out. When the jobs of the whole period need more requests than an hour allows, fetch the baseline week in full and the weeks before it with `--sample 012345`, into a second folder, and import it with `.import --skip 1`, since the first import already made the tables. Leave out hours that distort the waits, such as a runner pool's first hour online or an outage, and say so. Every API time is UTC.
+Fetching: `fetch.mjs` lists every run in the period, halving the date range until each part is under the 1,000 runs the API returns for one query, then reads each run's jobs, one request per run. `gh api rate_limit` shows the requests left this hour, and the script sleeps through the limit when it runs out. When the jobs of the whole period need more requests than an hour allows, fetch the baseline week in full and the weeks before it with `--sample 012345`, into a second folder, and import it with `.import --skip 1`, since the first import already made the tables. End the second folder's period one second before the baseline starts, such as `2025-01-12T23:59:59Z`, since `fetch.mjs` includes both ends of a period and a run created on the shared second would be imported twice. Leave out hours that distort the waits, such as a runner pool's first hour online or an outage, and say so. Every API time is UTC.
 
 ## Patterns
 
@@ -102,8 +102,8 @@ Merging jobs, or renaming one, renames the checks the rulesets require. Keep eac
 
 [`replay.mjs`](./scripts/replay.mjs) replays the jobs a pool ran against pools of other sizes: each job takes the runner that frees up first, starts after a pickup delay, and holds the runner for its run time plus the time its pod takes to re-create.
 
-1. Export every job the pool ran in the period, from every repository that shares it, each fetched with `fetch.mjs` and no `--events`, since jobs of every event take the pool's runners: `sqlite3 -header -tabs ci.db "SELECT created_at, started_at, completed_at FROM jobs WHERE labels LIKE '%<pool label>%' AND runner_name != '' AND started_at >= created_at ORDER BY created_at" > pool.tsv`.
-2. Run `node replay.mjs pool.tsv --calibrate <runners in the period> --runners 2-8 --load 1,<busier>`. `--calibrate` picks the re-create gap whose replay at today's size comes closest to the measured waits; a gap from 10 to 40 seconds is typical. `<busier>` brings the period up to a busy recent week's pace: that week's pushes per working day over the period's.
+1. Export every job the pool ran in the period, from every repository that shares it, each fetched with `fetch.mjs` and no `--events`, since jobs of every event take the pool's runners: `sqlite3 -header -tabs <dir>/ci.db "SELECT created_at, started_at, completed_at FROM jobs WHERE labels LIKE '%<pool label>%' AND runner_name != '' AND started_at >= created_at ORDER BY created_at" > <dir>/pool.tsv`.
+2. Run `node <skill>/scripts/replay.mjs <dir>/pool.tsv --calibrate <runners in the period> --runners 2-8 --load 1,<busier>`. `--calibrate` picks the re-create gap whose replay at today's size comes closest to the measured waits; a gap from 10 to 40 seconds is typical. `<busier>` brings the period up to a busy recent week's pace: that week's pushes per working day over the period's.
 3. Recommend the smallest pool whose slowest 10% start within a few seconds at the busier load, with what it adds in CPU and memory.
 
 ## Cost
