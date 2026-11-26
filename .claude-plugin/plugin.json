@@ -1,6 +1,6 @@
 {
   "name": "almothafar",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Every skill in almothafar-maf/skills, such as sync-jira, which keeps a Jira project in step with a repository's GitHub work.",
   "author": {
     "name": "almothafar-maf",
