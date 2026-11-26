@@ -9,7 +9,7 @@ Agent skills by [@almothafar-maf](https://github.com/almothafar-maf), in the [Ag
 
 ## Install
 
-Every route installs all the skills here, and the plugin routes bring in skills added later. Pick one route per agent: a skill installed twice shows up twice. [docs/install.md](docs/install.md) has each route's commands.
+Every route installs all the skills here, and the plugin routes bring in each new release; the [releases page](https://github.com/almothafar-maf/skills/releases) lists what each one changed. Pick one route per agent: a skill installed twice shows up twice. [docs/install.md](docs/install.md) has each route's commands.
 
 | Agent | Route | Updates |
 | --- | --- | --- |
